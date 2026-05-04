@@ -9,35 +9,39 @@ void setup() {
   Serial.begin(9600); 
   Wire.begin();
   
-  Serial.println(F("--- START STACJI POGODOWEJ (UNO) ---"));
-
   if (lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE)) {
-    Serial.println(F("BH1750: OK"));
-  } else {
-    Serial.println(F("BH1750: BLAD (Sprawdz adres 0x23 i luty!)"));
+
   }
+  
   if (bmp.begin(0x76)) {
-    Serial.println(F("BMP280: OK"));
-  } else {
-    Serial.println(F("BMP280: BLAD (Sprawdz adres 0x76 i luty!)"));
+
   }
 }
 
 void loop() {
+
   float lux = lightMeter.readLightLevel();
   float temp = bmp.readTemperature();
   float pres = bmp.readPressure() / 100.0;
-
   int soilRaw = analogRead(A0);
 
+
+  String dataPayload = "T:" + String(temp, 2) + 
+                       ";P:" + String(pres, 2) + 
+                       ";L:" + String(lux, 2) + 
+                       ";S:" + String(soilRaw) + ";";
+
+
+  byte checksum = 0;
+  for (unsigned int i = 0; i < dataPayload.length(); i++) {
+    checksum ^= (byte)dataPayload[i];
+  }
+
   Serial.print("<");
-
-  Serial.print("T:"); Serial.print(temp, 2); Serial.print(";");
-  Serial.print("P:"); Serial.print(pres, 2); Serial.print(";");
-  Serial.print("L:"); Serial.print(lux, 2);  Serial.print(";");
-  Serial.print("S:"); Serial.print(soilRaw);
-
+  Serial.print(dataPayload);
+  Serial.print("CS:");
+  Serial.print(checksum);
   Serial.println(">");
 
-  delay(2000);
+  delay(5000);
 }
